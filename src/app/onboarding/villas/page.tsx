@@ -2,7 +2,17 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Plus, Trash2, RotateCcw, ArrowRight } from "lucide-react";
+import {
+  Building2,
+  Plus,
+  Trash2,
+  RotateCcw,
+  ArrowRight,
+  Mail,
+  Forward,
+  AlertTriangle,
+} from "lucide-react";
+import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +21,6 @@ import { OnboardingStepper } from "@/components/onboarding/stepper";
 import {
   loadOnboarding,
   saveOnboarding,
-  MOCK_DETECTED_VILLAS,
   type DetectedVilla,
 } from "@/lib/onboarding-state";
 import { toast } from "@/components/ui/toaster";
@@ -36,7 +45,11 @@ export default function VillasPage() {
   const [newName, setNewName] = React.useState("");
   const [newAirbnbId, setNewAirbnbId] = React.useState("");
 
-  // Initial load — priorité : DB > sessionStorage > mock
+  // Initial load — priorité : DB > sessionStorage > vide (plus de mock)
+  // Si 0 villa détectée par le scan Gmail, on affiche un écran d'aide à l'utilisateur
+  // au lieu de lui montrer des fausses villas qu'il devra supprimer.
+  const [loaded, setLoaded] = React.useState(false);
+
   React.useEffect(() => {
     let cancelled = false;
 
@@ -54,21 +67,21 @@ export default function VillasPage() {
             }));
             setVillas(dbVillas);
             saveOnboarding({ villas: dbVillas });
+            setLoaded(true);
             return;
           }
         }
       } catch {
-        // Si l'API plante, on tombe sur sessionStorage / mock
+        // Si l'API plante, on tombe sur sessionStorage
       }
 
-      // Fallback : sessionStorage si présent, sinon mock
+      // Fallback : sessionStorage si présent
       const saved = loadOnboarding();
       if (saved.villas.length > 0) {
         setVillas(saved.villas);
-      } else {
-        setVillas(MOCK_DETECTED_VILLAS);
-        saveOnboarding({ villas: MOCK_DETECTED_VILLAS });
       }
+      // Sinon → liste vide, on affichera l'écran "0 villa détectée"
+      setLoaded(true);
     })();
 
     return () => {
@@ -107,20 +120,44 @@ export default function VillasPage() {
 
   function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!newName.trim()) return;
+    const trimmedName = newName.trim();
+    const trimmedId = newAirbnbId.trim();
+
+    if (!trimmedName) {
+      toast.error("Le nom de la villa est obligatoire");
+      return;
+    }
+
+    // Validation format ID Airbnb (si fourni)
+    if (trimmedId && !/^\d{6,12}$/.test(trimmedId)) {
+      toast.error(
+        "L'ID Airbnb doit être un nombre de 6 à 12 chiffres (visible dans l'URL airbnb.com/rooms/XXXXX)"
+      );
+      return;
+    }
+
+    // Détecte les doublons par ID Airbnb
+    if (
+      trimmedId &&
+      villas.some((v) => v.airbnbId === trimmedId && !v.removed)
+    ) {
+      toast.error("Cette villa est déjà dans votre liste");
+      return;
+    }
+
     const next: DetectedVilla[] = [
       ...villas,
       {
         id: `manual-${Date.now()}`,
-        name: newName.trim(),
-        airbnbId: newAirbnbId.trim() || undefined,
+        name: trimmedName,
+        airbnbId: trimmedId || undefined,
       },
     ];
     persist(next);
     setNewName("");
     setNewAirbnbId("");
     setShowAddForm(false);
-    toast.success(`Villa "${newName}" ajoutée`);
+    toast.success(`Villa "${trimmedName}" ajoutée`);
   }
 
   function handleContinue() {
@@ -145,12 +182,36 @@ export default function VillasPage() {
         </p>
 
         <div className="mt-7 space-y-3">
-          {villas.length === 0 && (
+          {/* Loading initial */}
+          {!loaded && (
             <Card padding="md" variant="muted">
               <p className="text-sm text-ink-soft">Chargement…</p>
             </Card>
           )}
 
+          {/* État : 0 villa détectée — écran d'aide avec 3 options */}
+          {loaded && villas.length === 0 && (
+            <Card padding="md" className="border-warning/30 bg-warning/5">
+              <div className="flex items-start gap-3">
+                <AlertTriangle
+                  className="h-5 w-5 mt-0.5 flex-shrink-0 text-warning"
+                  aria-hidden
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-aubergine">
+                    Aucune villa Airbnb détectée
+                  </p>
+                  <p className="mt-1 text-sm text-ink-soft leading-relaxed">
+                    On n'a trouvé aucune notification Airbnb dans cette boîte
+                    Gmail sur les 90 derniers jours. Plusieurs raisons
+                    possibles &mdash; choisissez celle qui correspond&nbsp;:
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Liste des villas détectées */}
           {villas.map((villa) => (
             <VillaRow
               key={villa.id}
@@ -167,16 +228,72 @@ export default function VillasPage() {
           ))}
         </div>
 
+        {/* Si 0 villa : afficher les 3 options de résolution avant le formulaire d'ajout */}
+        {loaded && villas.length === 0 && !showAddForm && (
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => signOut({ redirectTo: "/login" })}
+              className="text-left rounded-md border border-border bg-cream-warm/30 p-4 transition-colors hover:border-aubergine-soft hover:bg-cream-warm/60"
+            >
+              <Mail className="h-4 w-4 text-aubergine-medium" aria-hidden />
+              <p className="mt-2 text-sm font-medium text-aubergine">
+                Mauvais Gmail
+              </p>
+              <p className="mt-1 text-xs text-ink-soft leading-relaxed">
+                Vos notifs Airbnb arrivent dans une autre boîte. Reconnectez-vous
+                avec le bon compte.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                toast.info(
+                  "Ouvrez votre boîte source (Outlook, iCloud…), allez dans Paramètres → Transfert → Ajoutez votre Gmail connecté ici comme destination. Tous les nouveaux emails Airbnb seront détectés sous 1 minute."
+                )
+              }
+              className="text-left rounded-md border border-border bg-cream-warm/30 p-4 transition-colors hover:border-aubergine-soft hover:bg-cream-warm/60"
+            >
+              <Forward className="h-4 w-4 text-aubergine-medium" aria-hidden />
+              <p className="mt-2 text-sm font-medium text-aubergine">
+                Configurer un transfert
+              </p>
+              <p className="mt-1 text-xs text-ink-soft leading-relaxed">
+                Vos notifs Airbnb arrivent ailleurs ? Transférez-les vers ce
+                Gmail depuis votre boîte source.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowAddForm(true)}
+              className="text-left rounded-md border border-border bg-cream-warm/30 p-4 transition-colors hover:border-aubergine-soft hover:bg-cream-warm/60"
+            >
+              <Plus className="h-4 w-4 text-aubergine-medium" aria-hidden />
+              <p className="mt-2 text-sm font-medium text-aubergine">
+                Ajouter manuellement
+              </p>
+              <p className="mt-1 text-xs text-ink-soft leading-relaxed">
+                Renseignez vous-même votre annonce Airbnb. La détection se
+                fera quand le 1er email arrivera.
+              </p>
+            </button>
+          </div>
+        )}
+
         {!showAddForm ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-4"
-            onClick={() => setShowAddForm(true)}
-            leftIcon={<Plus className="h-3.5 w-3.5" aria-hidden />}
-          >
-            Ajouter une villa manuellement
-          </Button>
+          villas.length > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-4"
+              onClick={() => setShowAddForm(true)}
+              leftIcon={<Plus className="h-3.5 w-3.5" aria-hidden />}
+            >
+              Ajouter une villa manuellement
+            </Button>
+          ) : null
         ) : (
           <Card padding="md" className="mt-4 bg-cream-warm/30">
             <form onSubmit={handleAdd} className="space-y-3">
