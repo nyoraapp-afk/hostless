@@ -1,0 +1,477 @@
+// hostelyo. — Prisma schema (Phase 1)
+// Source of truth pour toutes les données de l'app.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =============================================================================
+// AUTH.JS — modèles requis par next-auth + @auth/prisma-adapter
+// =============================================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// =============================================================================
+// USER
+// =============================================================================
+
+enum UserRole {
+  OWNER     // user final propriétaire d'un compte hostelyo
+  ADMIN     // employé Hostelyo avec tous les droits
+  SUPPORT   // employé Hostelyo support (lecture + actions limitées)
+  READONLY  // employé Hostelyo en lecture seule
+}
+
+enum Locale {
+  fr
+  en
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  locale        Locale    @default(fr)
+  role          UserRole  @default(OWNER)
+
+  stripeCustomerId String? @unique
+
+  /// Alias unique pour réception d'emails forwardés (option 2 d'inscription).
+  /// Format : "<slug>@in.hostelyo.com" — slug généré à partir du nom/email à l'inscription forwarding.
+  /// Null si l'utilisateur a choisi OAuth Google (option 1).
+  inboundAlias String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations Auth.js
+  accounts Account[]
+  sessions Session[]
+
+  // Relations métier
+  emailAccounts   EmailAccount[]
+  whatsappNumbers WhatsAppNumber[]
+  villas          Villa[]
+  intervenants    Intervenant[]
+  dispatchRules   DispatchRule[]
+  subscription    Subscription?
+  pendingChanges  PendingChange[]
+  auditLogs       AuditLog[]
+
+  @@index([email])
+}
+
+// =============================================================================
+// COMPTES EXTERNES — emails (Gmail/Outlook) + WhatsApp
+// =============================================================================
+
+enum EmailProvider {
+  GMAIL
+  OUTLOOK
+}
+
+enum SyncStatus {
+  CONNECTED        // OK, polling actif
+  PENDING_INITIAL  // OAuth fait, scan initial en cours
+  EXPIRED          // refresh_token invalide, reconnexion nécessaire
+  ERROR            // erreur API persistante
+  DISABLED         // utilisateur a désactivé manuellement
+}
+
+model EmailAccount {
+  id           String        @id @default(cuid())
+  userId       String
+  provider     EmailProvider
+  email        String
+
+  // Tokens OAuth pour le polling Gmail/Outlook (chiffrés en application)
+  accessToken  String? @db.Text
+  refreshToken String? @db.Text
+  expiresAt    DateTime?
+
+  status     SyncStatus @default(PENDING_INITIAL)
+  lastSyncAt DateTime?
+  lastError  String?    @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, email])
+  @@index([userId])
+}
+
+enum WhatsAppStatus {
+  PENDING_VERIFICATION  // OTP envoyé, en attente
+  VERIFIED              // OTP validé, peut recevoir des alertes
+  EXPIRED               // numéro plus accessible (rare)
+}
+
+model WhatsAppNumber {
+  id     String         @id @default(cuid())
+  userId String
+  e164   String         // format international ex "+33612345678"
+  status WhatsAppStatus @default(PENDING_VERIFICATION)
+
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, e164])
+  @@index([userId])
+}
+
+// =============================================================================
+// PLAN + SUBSCRIPTION (Stripe)
+// =============================================================================
+
+enum PlanSlug {
+  ESSENTIEL
+  SERENITE
+}
+
+// Source de vérité unique pour les prix (Pattern 10).
+// Lue par tous les écrans, jamais hardcodée côté JS.
+model Plan {
+  id            String   @id @default(cuid())
+  slug          PlanSlug @unique
+  label         String   // "Essentiel" / "Sérénité"
+  priceMonthly  Int      // en centimes EUR (8900 = 89.00€)
+  priceYearly   Int?
+  stripePriceId String?  @unique
+  features      Json     // liste features incluses
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+enum SubStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  UNPAID
+  PAUSED
+}
+
+model Subscription {
+  id     String @id @default(cuid())
+  userId String @unique
+  planId String
+
+  stripeSubscriptionId String?   @unique
+  status               SubStatus @default(INCOMPLETE)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAt             DateTime? // résiliation programmée
+  canceledAt           DateTime? // date effective de résiliation
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+}
+
+// =============================================================================
+// VILLAS + RÉSERVATIONS + ÉQUIPE + DISPATCH
+// =============================================================================
+
+enum VillaStatus {
+  ACTIVE     // monitorée
+  PAUSED     // monitoring temporaire désactivé
+  ARCHIVED   // soft-deleted
+}
+
+model Villa {
+  id        String      @id @default(cuid())
+  userId    String
+  airbnbId  String?     // identifiant Airbnb du listing
+  name      String
+  address   String?
+  city      String?
+  country   String?
+  status    VillaStatus @default(ACTIVE)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // soft-delete pour UNDO 5s (Pattern 4 + récupération)
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reservations     Reservation[]
+  messages         Message[]
+  alerts           Alert[]
+  villaExceptions  VillaException[]
+
+  @@index([userId])
+  @@index([airbnbId])
+}
+
+enum ReservationStatus {
+  UPCOMING
+  CHECKED_IN
+  COMPLETED
+  CANCELED
+}
+
+model Reservation {
+  id          String            @id @default(cuid())
+  villaId     String
+  airbnbCode  String?           @unique // code de réservation Airbnb (HMxxx)
+  guestName   String?
+  checkIn     DateTime?
+  checkOut    DateTime?
+  status      ReservationStatus @default(UPCOMING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  villa Villa @relation(fields: [villaId], references: [id], onDelete: Cascade)
+
+  @@index([villaId])
+  @@index([airbnbCode])
+}
+
+enum DispatchCategory {
+  MENAGE
+  PISCINE
+  JARDIN
+  MAINTENANCE
+  ACCUEIL
+  AUTRE
+}
+
+model Intervenant {
+  id        String  @id @default(cuid())
+  userId    String
+  name      String
+  phoneE164 String  // format E.164 ex "+33612345678"
+  notes     String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dispatchRules   DispatchRule[]
+  villaExceptions VillaException[]
+
+  @@index([userId])
+}
+
+// Règle globale (s'applique à toutes les villas) : pour cette catégorie, prévenir cet intervenant.
+model DispatchRule {
+  id            String           @id @default(cuid())
+  userId        String
+  category      DispatchCategory
+  intervenantId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  intervenant Intervenant @relation(fields: [intervenantId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, category])
+  @@index([userId])
+}
+
+// Exception par villa : override la règle globale pour cette villa + cette catégorie.
+model VillaException {
+  id            String           @id @default(cuid())
+  villaId       String
+  category      DispatchCategory
+  intervenantId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  villa       Villa       @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  intervenant Intervenant @relation(fields: [intervenantId], references: [id], onDelete: Restrict)
+
+  @@unique([villaId, category])
+  @@index([villaId])
+}
+
+// =============================================================================
+// MESSAGES + ALERTES (cœur du produit, Phase 2)
+// =============================================================================
+
+enum Urgency {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum AlertChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+}
+
+enum AlertStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  ACKED  // intervenant a confirmé prise en charge
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  villaId         String
+  airbnbThreadId  String?
+  fromName        String?
+  fromAddress     String?
+  body            String   @db.Text
+  receivedAt      DateTime
+
+  // Résultat de la classification IA (Phase 2)
+  classifiedAt   DateTime?
+  urgency        Urgency?
+  category       DispatchCategory?
+  summary        String?  @db.Text
+  suggestedReply String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  villa  Villa   @relation(fields: [villaId], references: [id], onDelete: Cascade)
+  alerts Alert[]
+
+  @@index([villaId])
+  @@index([receivedAt])
+  @@index([airbnbThreadId])
+}
+
+model Alert {
+  id        String       @id @default(cuid())
+  messageId String
+  villaId   String
+  channel   AlertChannel
+  sentTo    String       // numéro destination (intervenant ou hôte)
+  status    AlertStatus  @default(QUEUED)
+
+  // Stockage external IDs pour réconcilier les webhooks
+  externalId String? // SID Twilio, etc.
+  errorCode  String?
+  errorMsg   String? @db.Text
+
+  sentAt    DateTime?
+  ackedAt   DateTime?
+  createdAt DateTime  @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  villa   Villa   @relation(fields: [villaId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([villaId])
+  @@index([externalId])
+}
+
+// =============================================================================
+// PENDING CHANGES — Pattern 2 (décalage action ↔ état affiché)
+// Persistance des changements différés (changement plan, ajout villa au prochain
+// renouvellement, etc.) pour que l'UI puisse afficher StateBadge "scheduled".
+// =============================================================================
+
+enum PendingChangeStatus {
+  SCHEDULED
+  APPLIED
+  FAILED
+  CANCELED
+}
+
+model PendingChange {
+  id           String              @id @default(cuid())
+  userId       String
+  type         String              // "PLAN_CHANGE" | "VILLA_ADD" | "TEAM_RESET" | etc.
+  payload      Json                // données nécessaires pour l'application
+  scheduledFor DateTime
+  appliedAt    DateTime?
+  status       PendingChangeStatus @default(SCHEDULED)
+  errorMsg     String?             @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status, scheduledFor])
+}
+
+// =============================================================================
+// AUDIT LOG — toute action non triviale est tracée (Pattern 4 + compliance)
+// =============================================================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String   // "VILLA_DELETED", "PLAN_CHANGED", "INTERVENANT_REMOVED", etc.
+  target    String?  // "villa:abc123", "subscription:sub_xxx"
+  before    Json?
+  after     Json?
+  metadata  Json?    // IP, user agent, source (UI/admin/cron)
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
