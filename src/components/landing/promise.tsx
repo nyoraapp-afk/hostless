@@ -11,7 +11,7 @@ export function Promise() {
         <h2 className="font-serif text-2xl font-medium leading-snug tracking-tight sm:text-3xl">
           hostelyo veille jour et nuit.
           <br />
-          <em className="text-powder">Mais vous, vous vivez.</em>
+          <em className="text-powder">Et vous, vous vivez.</em>
         </h2>
 
         <ul className="mt-7 flex flex-col gap-4">
