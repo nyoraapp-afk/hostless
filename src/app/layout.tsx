@@ -27,7 +27,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "hostelyo. — Sois hôte. Sans les corvées.",
+    default: "hostelyo. — Hostelyo veille, votre vie s'éveille.",
     template: "%s · hostelyo.",
   },
   description:
