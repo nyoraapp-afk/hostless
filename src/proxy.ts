@@ -11,7 +11,10 @@ export default auth;
 
 export const config = {
   matcher: [
-    // Toutes les routes sauf : api/auth, _next, fichiers statiques.
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.svg|.*\\.png).*)",
+    // Toutes les routes sauf : api/auth, api/inngest, api/stripe/webhook,
+    // api/inbound, _next, fichiers statiques.
+    // Les webhooks et l'endpoint Inngest doivent être accessibles sans
+    // session — leur authentification est gérée par signature côté handler.
+    "/((?!api/auth|api/inngest|api/stripe/webhook|api/inbound|_next/static|_next/image|favicon.ico|.*\\.svg|.*\\.png).*)",
   ],
 };
