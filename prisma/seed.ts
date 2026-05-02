@@ -19,7 +19,7 @@ async function main() {
     {
       slug: "ESSENTIEL",
       label: "Essentiel",
-      priceMonthly: 8900, // 89.00€ en centimes
+      priceMonthly: 4900, // 49.00€ en centimes
       stripePriceId: process.env.STRIPE_PRICE_ID_ESSENTIEL,
       features: {
         items: [
@@ -33,7 +33,7 @@ async function main() {
     {
       slug: "SERENITE",
       label: "Sérénité",
-      priceMonthly: 12900,
+      priceMonthly: 9900, // 99.00€ en centimes
       stripePriceId: process.env.STRIPE_PRICE_ID_SERENITE,
       features: {
         items: [

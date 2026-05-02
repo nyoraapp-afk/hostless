@@ -11,8 +11,8 @@ export const PLAN_LABELS: Record<PlanSlug, string> = {
 };
 
 export const PLAN_PRICES: Record<PlanSlug, number> = {
-  ESSENTIEL: 89,
-  SERENITE: 129,
+  ESSENTIEL: 49,
+  SERENITE: 99,
 };
 
 export type DispatchCategory =

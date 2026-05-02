@@ -26,16 +26,16 @@ export function Pricing() {
           {/* Essentiel */}
           <PlanCard
             name="Essentiel"
-            price={89}
-            promise="Vous êtes alertée uniquement quand nécessaire."
+            price={49}
+            promise="Vous recevez une alerte uniquement quand nécessaire."
             description="hostelyo analyse vos messages 24h/24 et vous prévient sur WhatsApp pour tout ce qui demande votre intervention."
           />
 
           {/* Sérénité (recommandé) */}
           <PlanCard
             name="Sérénité"
-            price={129}
-            promise="Vous êtes alertée. Votre équipe est prévenue."
+            price={99}
+            promise="Vous recevez l'alerte. Votre équipe reçoit l'intervention."
             description="hostelyo prévient directement le bon intervenant selon le type de problème. Vous restez toujours en copie."
             recommended
           />

@@ -11,7 +11,7 @@ import { formatPrice } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "Tarifs",
   description:
-    "hostelyo coûte 89€ ou 129€ par villa et par mois, sans engagement. Choisissez Essentiel pour des alertes WhatsApp ciblées, ou Sérénité pour le dispatch automatique vers votre équipe.",
+    "hostelyo coûte 49€ ou 99€ par villa et par mois, sans engagement. Choisissez Essentiel pour des alertes WhatsApp ciblées, ou Sérénité pour le dispatch automatique vers votre équipe.",
 };
 
 export default function TarifsPage() {
@@ -41,11 +41,11 @@ export default function TarifsPage() {
             <span className="text-sm text-ink-muted">/ villa / mois</span>
           </div>
           <p className="mt-3 text-sm font-medium text-aubergine-medium">
-            Vous êtes alertée uniquement quand nécessaire.
+            Vous recevez une alerte uniquement quand nécessaire.
           </p>
           <ul className="mt-5 space-y-2.5 text-sm text-ink-soft">
-            <FeatureItem>Veille 24h/24 de vos messages Airbnb</FeatureItem>
-            <FeatureItem>Classification IA Claude Sonnet (urgent / routinier / spam)</FeatureItem>
+            <FeatureItem>Veille 24h/24 sur vos messages Airbnb</FeatureItem>
+            <FeatureItem>Classification intelligente (urgent / routinier / spam)</FeatureItem>
             <FeatureItem>Alertes WhatsApp uniquement sur les vraies urgences</FeatureItem>
             <FeatureItem>Filtrage intelligent (vos automatismes Airbnb restent actifs)</FeatureItem>
             <FeatureItem>Dashboard pour gérer vos villas + voir l'historique</FeatureItem>
@@ -76,7 +76,7 @@ export default function TarifsPage() {
             <span className="text-sm text-ink-muted">/ villa / mois</span>
           </div>
           <p className="mt-3 text-sm font-medium text-aubergine-medium">
-            Vous êtes alertée. Votre équipe est prévenue.
+            Vous recevez l'alerte. Votre équipe reçoit l'intervention.
           </p>
           <ul className="mt-5 space-y-2.5 text-sm text-ink-soft">
             <FeatureItem>
@@ -117,8 +117,8 @@ export default function TarifsPage() {
 
       <h3>Le tarif est-il par villa ou par compte ?</h3>
       <p>
-        <strong>Par villa</strong>. Si vous avez 3 villas en Sérénité, c'est 3 × 129€ =
-        387€/mois. Cohérent avec votre activité : plus vous gérez de villas, plus
+        <strong>Par villa</strong>. Si vous avez 3 villas en Sérénité, c'est 3 × 99€ =
+        297€/mois. Cohérent avec votre activité : plus vous gérez de villas, plus
         hostelyo travaille pour vous.
       </p>
 
