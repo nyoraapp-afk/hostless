@@ -345,18 +345,25 @@ export default function VillasPage() {
         )}
 
         <div className="mt-8 flex flex-col items-center gap-3">
-          <Button
-            size="lg"
-            onClick={handleContinue}
-            disabled={activeCount === 0}
-          >
-            Continuer
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Button>
-          <p className="text-xs text-ink-muted">
-            <strong className="text-aubergine">{activeCount}</strong>{" "}
-            villa{activeCount > 1 ? "s" : ""} à monitorer
-          </p>
+          {activeCount > 0 ? (
+            <>
+              <Button size="lg" onClick={handleContinue}>
+                Continuer
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Button>
+              <p className="text-xs text-ink-muted">
+                <strong className="text-aubergine">{activeCount}</strong>{" "}
+                villa{activeCount > 1 ? "s" : ""} à monitorer
+              </p>
+            </>
+          ) : (
+            loaded && (
+              <p className="text-xs text-ink-muted text-center max-w-sm">
+                Choisissez une option ci-dessus pour continuer. Une villa
+                active est nécessaire pour activer la veille.
+              </p>
+            )
+          )}
         </div>
       </div>
 
