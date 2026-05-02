@@ -1,5 +1,3 @@
-import type { ParsedAirbnbEmail } from "@/lib/gmail";
-
 /**
  * Extraction des listings Airbnb depuis les emails de notification.
  *
@@ -13,6 +11,16 @@ import type { ParsedAirbnbEmail } from "@/lib/gmail";
 export type DetectedListing = {
   airbnbId: string;
   name: string;
+};
+
+/**
+ * Type minimal accepté par les helpers d'extraction.
+ * Compatible avec ParsedAirbnbEmail mais aussi avec les versions sérialisées
+ * (Inngest step.run sérialise les Date en string — on n'utilise pas la date ici).
+ */
+export type EmailForExtraction = {
+  subject: string | null;
+  body: string;
 };
 
 /**
@@ -77,7 +85,7 @@ export function extractVillaNameFromSubject(subject: string | null): string | nu
  * - Le nom est extrait du subject (best-effort) ou tombe sur "Villa #<id>"
  */
 export function extractListingsFromEmail(
-  email: ParsedAirbnbEmail
+  email: EmailForExtraction
 ): DetectedListing[] {
   const ids = extractListingIds(email.body);
   if (ids.length === 0) return [];
@@ -99,7 +107,7 @@ export function extractListingsFromEmail(
  * réel, vu que les emails de réservation sont les plus structurés).
  */
 export function aggregateDetectedListings(
-  emails: ParsedAirbnbEmail[]
+  emails: EmailForExtraction[]
 ): DetectedListing[] {
   const byId = new Map<string, string>();
 
