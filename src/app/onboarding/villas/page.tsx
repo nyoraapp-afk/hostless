@@ -11,6 +11,7 @@ import {
   Mail,
   Forward,
   AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -97,6 +98,56 @@ export default function VillasPage() {
   // pas les notifs Airbnb — pas la peine d'ajouter une villa qui ne sera
   // jamais alertée).
   const isManualAddBlocked = emailsScanned === 0;
+
+  // État du re-scan (utilisé après configuration d'un transfert)
+  const [rescanning, setRescanning] = React.useState(false);
+
+  async function handleRescan() {
+    setRescanning(true);
+    try {
+      const res = await fetch("/api/onboarding/scan", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Erreur lors du scan", {
+          description: data.hint,
+        });
+        return;
+      }
+      // Met à jour l'état local + sessionStorage
+      setEmailsScanned(data.emailsScanned);
+      saveOnboarding({ emailsScanned: data.emailsScanned });
+
+      if (data.villas && data.villas.length > 0) {
+        const dbVillas: DetectedVilla[] = data.villas.map(
+          (v: { id: string; name: string; airbnbId: string | null }) => ({
+            id: v.id,
+            name: v.name,
+            airbnbId: v.airbnbId ?? undefined,
+          })
+        );
+        setVillas(dbVillas);
+        saveOnboarding({ villas: dbVillas });
+        toast.success(
+          `${dbVillas.length} villa${dbVillas.length > 1 ? "s" : ""} détectée${dbVillas.length > 1 ? "s" : ""} !`
+        );
+      } else if (data.emailsScanned === 0) {
+        toast.error("Toujours aucun email Airbnb détecté", {
+          description:
+            "Le transfert peut prendre quelques minutes pour être actif. Réessayez dans 5 minutes ou envoyez-vous un email Airbnb manuel pour valider.",
+        });
+      } else {
+        toast.info(
+          `${data.emailsScanned} email${data.emailsScanned > 1 ? "s" : ""} Airbnb détecté${data.emailsScanned > 1 ? "s" : ""}, mais aucune villa identifiable. Ajoutez-les manuellement.`
+        );
+      }
+    } catch {
+      toast.error("Erreur réseau", {
+        description: "Vérifiez votre connexion et réessayez.",
+      });
+    } finally {
+      setRescanning(false);
+    }
+  }
 
   const activeCount = villas.filter((v) => !v.removed).length;
 
@@ -330,6 +381,37 @@ export default function VillasPage() {
                   fera quand le 1er email arrivera.
                 </p>
               </button>
+            )}
+          </div>
+        )}
+
+        {/* Bouton "Relancer le scan" — visible quand 0 villa et pas en formulaire d'ajout.
+            Permet à l'utilisateur de re-vérifier après avoir configuré un transfert
+            ou changé son setup. */}
+        {loaded && villas.length === 0 && !showAddForm && (
+          <div className="mt-5 flex flex-col items-center gap-2">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={handleRescan}
+              disabled={rescanning}
+              leftIcon={
+                <RefreshCw
+                  className={
+                    "h-4 w-4 " + (rescanning ? "animate-spin" : "")
+                  }
+                  aria-hidden
+                />
+              }
+            >
+              {rescanning ? "Scan en cours…" : "Relancer le scan Gmail"}
+            </Button>
+            {isManualAddBlocked && (
+              <p className="text-xs text-ink-muted text-center max-w-md leading-relaxed">
+                Une fois votre transfert configuré ou votre Gmail Airbnb
+                connecté, cliquez ici pour relancer la détection. La 1ère notif
+                qui arrive validera votre configuration.
+              </p>
             )}
           </div>
         )}
