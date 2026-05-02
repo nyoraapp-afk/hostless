@@ -44,7 +44,7 @@ export default function TarifsPage() {
             Vous êtes alertée uniquement quand nécessaire.
           </p>
           <ul className="mt-5 space-y-2.5 text-sm text-ink-soft">
-            <FeatureItem>Surveillance 24h/24 de vos messages Airbnb</FeatureItem>
+            <FeatureItem>Veille 24h/24 de vos messages Airbnb</FeatureItem>
             <FeatureItem>Classification IA Claude Sonnet (urgent / routinier / spam)</FeatureItem>
             <FeatureItem>Alertes WhatsApp uniquement sur les vraies urgences</FeatureItem>
             <FeatureItem>Filtrage intelligent (vos automatismes Airbnb restent actifs)</FeatureItem>

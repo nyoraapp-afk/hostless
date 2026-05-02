@@ -67,7 +67,7 @@ export default function AProposPage() {
         <li>Un PMS / channel manager qui complique votre stack</li>
         <li>Un bot qui réponde à votre place avec des messages génériques</li>
         <li>Une plateforme pour gérer toute votre activité — vous gardez Airbnb, on
-          surveille juste pour vous</li>
+          veille juste pour vous</li>
       </ul>
 
       <h2>L'équipe</h2>

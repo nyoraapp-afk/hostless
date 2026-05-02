@@ -144,7 +144,7 @@ function welcomeEmailHtml(input: {
                       <td style="padding:6px 0;text-align:right;font-weight:500;">${escapeHtml(planLabel)}</td>
                     </tr>
                     <tr>
-                      <td style="padding:6px 0;color:#5C4859;">Villas surveillées</td>
+                      <td style="padding:6px 0;color:#5C4859;">Villas suivies</td>
                       <td style="padding:6px 0;text-align:right;font-weight:500;">${villaCount}</td>
                     </tr>
                     ${
@@ -173,7 +173,7 @@ function welcomeEmailHtml(input: {
 
             <p style="margin:24px 0 0;font-size:14px;color:#5C4859;line-height:1.6;">
               <strong style="color:#3D1F3D;">Et maintenant ?</strong><br>
-              hostelyo surveille la boîte Gmail que vous avez connectée et analyse en continu
+              hostelyo veille sur la boîte Gmail que vous avez connectée et analyse en continu
               les notifications Airbnb qu'elle reçoit. La première alerte arrivera sur votre
               WhatsApp dès qu'une vraie urgence sera détectée. Si vous n'en recevez pas dans
               les premiers jours, c'est tout à fait normal — c'est même le but :
@@ -189,7 +189,7 @@ function welcomeEmailHtml(input: {
                   </p>
                   <p style="margin:0 0 12px;font-size:14px;color:#2E1A2E;line-height:1.6;">
                     hostelyo lit la boîte Gmail que vous venez de connecter. Pour que la
-                    surveillance fonctionne, vos notifications Airbnb doivent bien arriver dans
+                    veille fonctionne, vos notifications Airbnb doivent bien arriver dans
                     <em style="color:#5A3856;">cette même boîte</em>.
                   </p>
                   <p style="margin:0 0 8px;font-size:14px;color:#2E1A2E;line-height:1.6;">

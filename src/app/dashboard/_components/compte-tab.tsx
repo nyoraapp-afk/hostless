@@ -325,7 +325,7 @@ function CancelSubscriptionRow({
           },
           {
             label: "Villas monitorées",
-            after: `${villaCount} villa${villaCount > 1 ? "s" : ""} cesseront d'être surveillées le ${endDate}`,
+            after: `${villaCount} villa${villaCount > 1 ? "s" : ""} ne seront plus suivies le ${endDate}`,
             variant: "loss",
           },
         ]}

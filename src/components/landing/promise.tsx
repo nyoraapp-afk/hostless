@@ -9,7 +9,7 @@ export function Promise() {
     <section className="px-6 py-12 sm:py-16">
       <div className="mx-auto max-w-2xl rounded-2xl bg-aubergine px-7 py-10 text-on-aubergine sm:px-10 sm:py-12">
         <h2 className="font-serif text-2xl font-medium leading-snug tracking-tight sm:text-3xl">
-          Vos clients sont surveillés 24h/24.
+          hostelyo veille jour et nuit.
           <br />
           <em className="text-powder">Mais vous, vous vivez.</em>
         </h2>

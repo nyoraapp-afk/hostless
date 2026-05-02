@@ -25,7 +25,7 @@ export type ClassificationResult = {
   suggestedReply: string | null;
 };
 
-const SYSTEM_PROMPT = `Tu es l'IA de classification de hostelyo, un service qui surveille les messages Airbnb des hôtes 24h/24 et alerte sur WhatsApp uniquement quand l'intervention humaine est nécessaire.
+const SYSTEM_PROMPT = `Tu es l'IA de classification de hostelyo, un service qui veille sur les messages Airbnb des hôtes 24h/24 et alerte sur WhatsApp uniquement quand l'intervention humaine est nécessaire.
 
 Pour chaque message Airbnb reçu, tu dois retourner un JSON strict avec :
 {

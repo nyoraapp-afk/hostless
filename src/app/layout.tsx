@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: "%s · hostelyo.",
   },
   description:
-    "hostelyo surveille vos messages Airbnb 24h/24 et ne vous alerte sur WhatsApp que quand votre intervention est nécessaire. Pour conciergeries et gestionnaires de villas.",
+    "hostelyo veille sur vos messages Airbnb 24h/24 et ne vous alerte sur WhatsApp que quand votre intervention est nécessaire. Pour conciergeries et gestionnaires de villas.",
   applicationName: "hostelyo.",
   authors: [{ name: "hostelyo." }],
   keywords: [
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "hostelyo. — Ne ratez plus les messages importants sur Airbnb",
     description:
-      "Une IA surveille votre boîte mail Airbnb 24/7 et vous alerte uniquement sur les vraies urgences. Vos intervenants reçoivent les bonnes alertes au bon moment.",
+      "Une IA veille sur votre boîte mail Airbnb 24/7 et vous alerte uniquement sur les vraies urgences. Vos intervenants reçoivent les bonnes alertes au bon moment.",
     type: "website",
     locale: "fr_FR",
   },
