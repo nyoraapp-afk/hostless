@@ -348,9 +348,11 @@ export default function VillasPage() {
             <button
               type="button"
               onClick={() =>
-                toast.info(
-                  "Ouvrez votre boîte source (Outlook, iCloud…), allez dans Paramètres → Transfert → Ajoutez votre Gmail connecté ici comme destination. Tous les nouveaux emails Airbnb seront détectés sous 1 minute."
-                )
+                toast.info("Configurer un transfert", {
+                  description:
+                    "1. Ouvrez votre boîte source (Outlook, iCloud, Yahoo…) → Paramètres → Transfert. 2. Ajoutez votre Gmail connecté ici comme destination. 3. Vérifiez que votre annonce Airbnb est ACTIVE (sinon aucune notif n'arrivera). 4. Pour valider rapidement : transférez-vous manuellement un email Airbnb récent depuis votre boîte source. 5. Cliquez 'Relancer le scan Gmail' ci-dessous.",
+                  duration: 12000,
+                })
               }
               className="text-left rounded-md border border-border bg-cream-warm/30 p-4 transition-colors hover:border-aubergine-soft hover:bg-cream-warm/60"
             >
