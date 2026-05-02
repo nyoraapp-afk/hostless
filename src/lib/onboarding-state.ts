@@ -30,6 +30,15 @@ export type OnboardingState = {
   whatsappVerified: boolean;
   plan: PlanSlug | null;
   team: Partial<Record<DispatchCategory, TeamMember>>;
+  /**
+   * Nombre d'emails Airbnb trouvés lors du dernier scan Gmail.
+   * - `null` : pas encore scanné (1er passage avant /onboarding/scan)
+   * - `0`    : aucune notif Airbnb dans la boîte → mauvais Gmail probablement.
+   *            L'ajout manuel est BLOQUÉ (on ne pourrait pas capter ses emails).
+   * - `> 0`  : la boîte reçoit bien les notifs. Si villas extractibles vides,
+   *            l'ajout manuel reste autorisé.
+   */
+  emailsScanned: number | null;
 };
 
 const KEY = "hostelyo-onboarding";
@@ -42,6 +51,7 @@ const DEFAULT: OnboardingState = {
   whatsappVerified: false,
   plan: null,
   team: {},
+  emailsScanned: null,
 };
 
 export function loadOnboarding(): OnboardingState {
@@ -69,12 +79,3 @@ export function clearOnboarding() {
   }
 }
 
-/**
- * Mock data utilisée par le scan tant que Gmail API + DB ne sont pas branchés.
- * Reproduit les 3 villas du proto v34 (ligne 3450-ish).
- */
-export const MOCK_DETECTED_VILLAS: DetectedVilla[] = [
-  { id: "mock-1", name: "Villa Sunset", airbnbId: "12345678" },
-  { id: "mock-2", name: "Villa Pamplemousses", airbnbId: "87654321" },
-  { id: "mock-3", name: "Villa Tamarin", airbnbId: "11223344" },
-];

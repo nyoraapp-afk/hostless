@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { saveOnboarding } from "@/lib/onboarding-state";
 
 /**
  * Page p3 — Scan réel de la boîte Gmail.
@@ -99,7 +100,12 @@ export default function ScanPage() {
           return;
         }
 
-        setState({ kind: "done", result: data as ScanResult });
+        // Sauvegarde le résultat dans sessionStorage pour que /onboarding/villas
+        // puisse adapter son UI (ex: bloquer l'ajout manuel si emailsScanned === 0).
+        const result = data as ScanResult;
+        saveOnboarding({ emailsScanned: result.emailsScanned });
+
+        setState({ kind: "done", result });
       } catch (err) {
         if (cancelled) return;
         const message = err instanceof Error ? err.message : "Erreur réseau";

@@ -44,6 +44,7 @@ export default function VillasPage() {
   const [showAddForm, setShowAddForm] = React.useState(false);
   const [newName, setNewName] = React.useState("");
   const [newAirbnbId, setNewAirbnbId] = React.useState("");
+  const [emailsScanned, setEmailsScanned] = React.useState<number | null>(null);
 
   // Initial load — priorité : DB > sessionStorage > vide (plus de mock)
   // Si 0 villa détectée par le scan Gmail, on affiche un écran d'aide à l'utilisateur
@@ -54,6 +55,10 @@ export default function VillasPage() {
     let cancelled = false;
 
     (async () => {
+      // Toujours lire emailsScanned depuis sessionStorage (sauvegardé par /onboarding/scan)
+      const saved = loadOnboarding();
+      if (!cancelled) setEmailsScanned(saved.emailsScanned);
+
       try {
         const res = await fetch("/api/onboarding/state");
         if (cancelled) return;
@@ -76,7 +81,6 @@ export default function VillasPage() {
       }
 
       // Fallback : sessionStorage si présent
-      const saved = loadOnboarding();
       if (saved.villas.length > 0) {
         setVillas(saved.villas);
       }
@@ -88,6 +92,11 @@ export default function VillasPage() {
       cancelled = true;
     };
   }, []);
+
+  // Si emailsScanned === 0, l'ajout manuel est bloqué (la boîte ne reçoit
+  // pas les notifs Airbnb — pas la peine d'ajouter une villa qui ne sera
+  // jamais alertée).
+  const isManualAddBlocked = emailsScanned === 0;
 
   const activeCount = villas.filter((v) => !v.removed).length;
 
@@ -189,23 +198,55 @@ export default function VillasPage() {
             </Card>
           )}
 
-          {/* État : 0 villa détectée — écran d'aide avec 3 options */}
+          {/* État : 0 villa détectée — message contextualisé selon emailsScanned */}
           {loaded && villas.length === 0 && (
-            <Card padding="md" className="border-warning/30 bg-warning/5">
+            <Card
+              padding="md"
+              className={
+                isManualAddBlocked
+                  ? "border-error/30 bg-error/5"
+                  : "border-warning/30 bg-warning/5"
+              }
+            >
               <div className="flex items-start gap-3">
                 <AlertTriangle
-                  className="h-5 w-5 mt-0.5 flex-shrink-0 text-warning"
+                  className={
+                    "h-5 w-5 mt-0.5 flex-shrink-0 " +
+                    (isManualAddBlocked ? "text-error" : "text-warning")
+                  }
                   aria-hidden
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-aubergine">
-                    Aucune villa Airbnb détectée
-                  </p>
-                  <p className="mt-1 text-sm text-ink-soft leading-relaxed">
-                    On n'a trouvé aucune notification Airbnb dans cette boîte
-                    Gmail sur les 90 derniers jours. Plusieurs raisons
-                    possibles &mdash; choisissez celle qui correspond&nbsp;:
-                  </p>
+                  {isManualAddBlocked ? (
+                    <>
+                      <p className="text-sm font-medium text-aubergine">
+                        Cette boîte Gmail ne reçoit pas vos notifications Airbnb
+                      </p>
+                      <p className="mt-1 text-sm text-ink-soft leading-relaxed">
+                        Aucune notification Airbnb détectée sur les 90 derniers
+                        jours dans cette boîte. Sans ces emails, hostelyo ne
+                        pourra rien surveiller. Vous devez soit reconnecter avec
+                        le bon compte Gmail, soit configurer un transfert depuis
+                        votre boîte source &mdash; l'ajout manuel ne suffira
+                        pas.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-medium text-aubergine">
+                        Aucune villa Airbnb identifiée automatiquement
+                      </p>
+                      <p className="mt-1 text-sm text-ink-soft leading-relaxed">
+                        Vos {emailsScanned} email
+                        {emailsScanned && emailsScanned > 1 ? "s" : ""} Airbnb
+                        détecté
+                        {emailsScanned && emailsScanned > 1 ? "s" : ""} dans
+                        cette boîte n'ont pas permis d'extraire de villa
+                        automatiquement (format inhabituel). Vous pouvez les
+                        ajouter manuellement ci-dessous.
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             </Card>
@@ -228,9 +269,16 @@ export default function VillasPage() {
           ))}
         </div>
 
-        {/* Si 0 villa : afficher les 3 options de résolution avant le formulaire d'ajout */}
+        {/* Si 0 villa : options de résolution. L'ajout manuel est BLOQUÉ
+            quand emailsScanned === 0 (la boîte ne reçoit rien — pas la peine
+            d'ajouter une villa qui ne sera jamais alertée). */}
         {loaded && villas.length === 0 && !showAddForm && (
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div
+            className={
+              "mt-5 grid gap-3 " +
+              (isManualAddBlocked ? "sm:grid-cols-2" : "sm:grid-cols-3")
+            }
+          >
             <button
               type="button"
               onClick={() => signOut({ redirectTo: "/login" })}
@@ -265,20 +313,24 @@ export default function VillasPage() {
               </p>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setShowAddForm(true)}
-              className="text-left rounded-md border border-border bg-cream-warm/30 p-4 transition-colors hover:border-aubergine-soft hover:bg-cream-warm/60"
-            >
-              <Plus className="h-4 w-4 text-aubergine-medium" aria-hidden />
-              <p className="mt-2 text-sm font-medium text-aubergine">
-                Ajouter manuellement
-              </p>
-              <p className="mt-1 text-xs text-ink-soft leading-relaxed">
-                Renseignez vous-même votre annonce Airbnb. La détection se
-                fera quand le 1er email arrivera.
-              </p>
-            </button>
+            {/* L'option "Ajouter manuellement" n'est visible que si emailsScanned > 0
+                (la boîte est la bonne, mais on n'a pas pu extraire de villa) */}
+            {!isManualAddBlocked && (
+              <button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                className="text-left rounded-md border border-border bg-cream-warm/30 p-4 transition-colors hover:border-aubergine-soft hover:bg-cream-warm/60"
+              >
+                <Plus className="h-4 w-4 text-aubergine-medium" aria-hidden />
+                <p className="mt-2 text-sm font-medium text-aubergine">
+                  Ajouter manuellement
+                </p>
+                <p className="mt-1 text-xs text-ink-soft leading-relaxed">
+                  Renseignez vous-même votre annonce Airbnb. La détection se
+                  fera quand le 1er email arrivera.
+                </p>
+              </button>
+            )}
           </div>
         )}
 
