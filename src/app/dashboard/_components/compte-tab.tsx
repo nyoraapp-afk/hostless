@@ -8,7 +8,9 @@ import {
   CreditCard,
   ShieldOff,
   Mail,
+  LogOut,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field } from "@/components/field";
@@ -66,6 +68,14 @@ export function CompteTab({
               Connecté avec Google · membre depuis {formatDate(user.createdAt)}
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => signOut({ redirectTo: "/" })}
+          >
+            <LogOut className="h-3.5 w-3.5" aria-hidden />
+            Se déconnecter
+          </Button>
         </div>
       </Card>
 
