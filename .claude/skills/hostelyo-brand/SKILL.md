@@ -1,6 +1,6 @@
 ---
 name: hostelyo-brand
-description: Brand book v4.0.0 du SaaS hostelyo. (domaine hostelyo.com). À charger systématiquement avant toute écriture ou modification d'UI dans ce projet — composants React, pages Next.js, Tailwind classes, copy, emails, marketing, landing, dashboard, onboarding, login, button, card, modal, form, toast, badge, icon. Encode la palette canonique (aubergine/crème/poudre/or/encre), la typographie (Lora/Inter/JetBrains Mono), la voix produit (vouvoiement strict, pas d'emoji), les règles de logo (point poudre), et les anti-patterns à bannir. Garantit que toute production UI respecte le brand premium et raffiné de hostelyo.
+description: Brand book v4.0.0 du SaaS hostelyo. (domaine hostelyo.com). À charger systématiquement avant toute écriture ou modification d'UI dans ce projet — composants React, pages Next.js, Tailwind classes, copy, wording, micro-copy, CTA, label, error message, empty state, toast, formulaire, validation, emails, marketing, landing, dashboard, onboarding, login, button, card, modal, form, badge, icon, responsive, mobile, tablet, desktop, breakpoint. Encode la palette canonique (aubergine/crème/poudre/or/encre), la typographie (Lora/Inter/JetBrains Mono), la voix produit (vouvoiement strict, pas d'emoji), les règles de logo (point poudre), les checklists wording par contexte (boutons, états vides, erreurs, toasts, formulaires, confirmations destructives) et les patterns responsive mobile-first (breakpoints Tailwind 4, touch targets 44px, navigation par device). Garantit que toute production UI respecte le brand premium et raffiné de hostelyo.
 ---
 
 # hostelyo. — Brand Book v4.0.0 (skill projet)
@@ -154,6 +154,160 @@ Coche mentalement chaque point avant de présenter un composant ou une page :
 
 ---
 
-## 10. Quand le brand laisse une marge
+## 10. Micro-copy (wording efficace)
+
+Le wording est la **moitié de l'UX**. Une mauvaise micro-copy fait paraître un produit premium amateur. Règles par contexte.
+
+### Boutons et CTA
+
+- **Verbe d'action vouvoyé**, max 4 mots, sans ponctuation finale.
+- Le CTA principal exprime **le bénéfice**, pas l'action technique.
+
+| Mauvais | Bon |
+|---|---|
+| `Cliquez ici` | `Voir nos offres` |
+| `Submit` / `Envoyer` (vague) | `Activer Sérénité` |
+| `OK` | `Continuer` ou `J'ai compris` selon contexte |
+| `Annuler` (en bouton primaire) | `Retour` ou `Garder mon forfait` |
+| `Suivant` (sur step ambigu) | `Confirmer mes villas` |
+
+CTA secondaire (lien texte ou ghost button) : verbe doux, "En savoir plus", "Voir les détails", "Modifier".
+
+### Boutons destructifs
+
+- Verbe explicite. Jamais "Supprimer" tout court — toujours **l'objet** : `Résilier l'abonnement`, `Supprimer la villa "Sunset"`, `Retirer cet intervenant`.
+- Couleur : `--color-error` (`#A65D6E`, rouge poudré), pas rouge vif.
+- Pour les actions vraiment irréversibles, exiger une confirmation par mot : `Tapez RESILIER pour confirmer` (Pattern 4 `confirm-action.tsx`).
+
+### États vides (empty states)
+
+Composant : `src/components/empty-state.tsx`. Toujours 3 éléments :
+1. **Icône Lucide** (~32px, couleur `ink-muted` ou `aubergine-soft`)
+2. **Titre court** (1 ligne) : explique l'état neutre, pas l'absence
+3. **Phrase d'aide + CTA** : action concrète pour résoudre
+
+| Mauvais | Bon |
+|---|---|
+| `Aucune donnée` | `Pas encore de villa connectée` |
+| `Empty.` | `Vos alertes apparaîtront ici dès la première détection.` |
+| `Pas d'alerte` (sans contexte) | `Tout est calme. C'est le but.` (en attente de la 1ère vraie alerte) |
+
+### Messages d'erreur
+
+Structure obligatoire en **2 temps** :
+1. Ce qui s'est passé (factuel, sans drame)
+2. Ce que l'utilisateur peut faire (action concrète)
+
+| Mauvais | Bon |
+|---|---|
+| `Erreur` | `Le numéro semble invalide. Vérifiez le format puis réessayez.` |
+| `500 Internal Server Error` | `Notre serveur est temporairement indisponible. Réessayez dans 1 minute.` |
+| `Stripe error: card_declined` | `Votre carte a été refusée par votre banque. Essayez une autre carte ou contactez votre banque.` |
+| `Oups !` (jamais) | (utilisez la voix posée brand) |
+
+### Toasts (sonner)
+
+- **Success** : verbe au passé, court (`toast.success("Villa ajoutée")`, `"Numéro vérifié"`, `"Forfait mis à jour"`).
+- **Error** : explicite + reproductible (`toast.error("Échec de l'envoi WhatsApp. Vérifiez votre numéro.")`).
+- **Info** : neutre (`toast.info("Modification enregistrée")`).
+- **Loading** : `toast.loading("Vérification du code…")` puis `.success` ou `.error` une fois résolu (sonner gère ça avec `toast.promise`).
+- Pas plus de **1 ligne**. Pas d'emoji dans le toast (sauf debug temp).
+
+### Loading states
+
+- Verbe en cours, points de suspension typographiques `…` (U+2026), pas trois points `...`.
+- `Envoi en cours…`, `Vérification de votre numéro…`, `Création de votre compte…`.
+- Skeleton (`<Skeleton />` du UI) plutôt que spinner dès qu'on connaît la forme du contenu à venir.
+
+### Formulaires
+
+- **Label** : substantif précis au-dessus du champ. Jamais le placeholder seul comme label.
+- **Placeholder** : exemple de saisie réelle (`+33 6 12 34 56 78`), pas une instruction (`Entrez votre numéro`).
+- **Help text** : sous le champ, taille `text-xs`, couleur `ink-muted`. Explique le pourquoi quand ce n'est pas évident.
+- **Required** : pas d'astérisque rouge. Indiquer `(facultatif)` sur les champs optionnels plutôt que `(requis)` partout.
+- **Error inline** : sous le champ, `text-xs text-error`. Apparaît à la perte de focus, pas pendant la frappe.
+
+### Confirmations destructives (Pattern 4)
+
+Composant : `src/components/patterns/confirm-action.tsx`. 3 niveaux :
+- **info** : juste un dialog avec OK/Annuler
+- **warning** : dialog avec mot-clé optionnel à taper
+- **destructive** : dialog avec mot-clé OBLIGATOIRE (ex `RESILIER`, `SUPPRIMER`)
+
+Toujours expliciter **les conséquences chiffrées** : "12 alertes orphelines seront archivées", "3 villas cesseront d'être suivies le 14 mars", etc.
+
+### Anti-patterns wording
+
+- `Êtes-vous sûr ?` (vague, infantilisant) → reformuler la conséquence concrète
+- `Cliquez ici` / `Cliquer ici` → toujours un verbe d'action sur le lien
+- `Erreur 404 - Not Found` → `Cette page n'existe pas`
+- `Veuillez patienter` → `Vérification en cours…`
+- `OK` en bouton (sauf dans un info-only modal trivial) → préférer un verbe d'action
+- Doubles négations : `Vous n'avez pas reçu d'alerte ?` → `Pas d'alerte reçue ?` ou `Si l'alerte ne vous parvient pas…`
+
+---
+
+## 11. Responsive (mobile-first)
+
+L'app est **mobile-first**. Tailwind 4 breakpoints utilisés :
+
+| Préfixe | Min width | Usage |
+|---|---|---|
+| (aucun) | 0px | Mobile portrait (cible iPhone 12 = 390px) |
+| `sm:` | 640px | Mobile landscape, petite tablette |
+| `md:` | 768px | Tablette portrait (iPad) |
+| `lg:` | 1024px | Tablette landscape, petit laptop |
+| `xl:` | 1280px | Desktop standard |
+| `2xl:` | 1536px | Grand écran |
+
+### Navigation par device
+
+`src/components/app-shell.tsx` implémente déjà 3 patterns :
+- **Mobile (< md)** : `bottom-nav` (4 onglets max, fixe en bas, h-14)
+- **Tablette (md à lg)** : drawer latéral via icône hamburger (Lucide `Menu`)
+- **Desktop (≥ lg)** : sidebar permanente à gauche, w-60
+
+**Toujours réutiliser** `app-shell.tsx` pour les pages auth — ne pas redéfinir la nav par page.
+
+### Touch targets
+
+- Minimum **44×44px** (Apple HIG). Recommandé **48×48px** (Material).
+- Sur mobile, chaque bouton/lien clickable doit respecter cette taille (utiliser `min-h-[44px]` au besoin).
+- Espacement entre cibles tactiles : **8px minimum** pour éviter les mistaps.
+
+### Type scale responsive
+
+Pattern à respecter pour les titres :
+- Hero h1 : `text-4xl sm:text-5xl md:text-6xl`
+- Section h2 : `text-2xl sm:text-3xl`
+- h3 : `text-lg sm:text-xl`
+- Body : `text-sm sm:text-base`
+
+### Spacing responsive
+
+- Padding section : `px-6 py-12 sm:py-16` ou `sm:py-20`
+- Gap entre items : `gap-4 sm:gap-6`
+- Container principal : `max-w-3xl mx-auto` (lecture confortable jusqu'à 768px utile)
+
+### Cibles de test obligatoires
+
+Avant tout merge sur main, tester en DevTools (Cmd/Ctrl+Shift+M) sur :
+1. **iPhone 12/13** (390×844)
+2. **iPad mini portrait** (768×1024)
+3. **Laptop 1280×720** (cible MacBook Air baseline)
+
+Bonus si critique : iPhone SE (375×667 — le plus serré encore en circulation).
+
+### Anti-patterns responsive
+
+- Barre horizontale qui scrolle accidentellement (vérifier avec DevTools : `overflow-x: hidden` au body si besoin)
+- Texte coupé sur mobile (utiliser `truncate` avec un `title` HTML pour la version complète au survol)
+- Boutons côte à côte trop serrés (gap-3 minimum entre 2 boutons mobile)
+- Modals plein écran sur desktop (utiliser `max-w-md` ou `max-w-lg` pour cadrer)
+- Sidebar desktop visible aussi sur mobile (régression — toujours conditionner avec `lg:` ou `hidden lg:flex`)
+
+---
+
+## 12. Quand le brand laisse une marge
 
 Pour tout ce qui n'est pas explicitement encadré ici (composition spatiale, micro-interactions, motion, atmosphère), le skill `frontend-design` (générique) prend le relais — mais **toujours** en respectant les contraintes ci-dessus comme garde-fous.
